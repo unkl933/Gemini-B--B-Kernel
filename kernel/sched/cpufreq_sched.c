@@ -21,6 +21,8 @@
 
 #define THROTTLE_DOWN_NSEC	50000000 /* 50ms default */
 #define THROTTLE_UP_NSEC	500000 /* 500us default */
+#define THROTTLE_DOWN_NSEC_BIGC	50000000 /* 50ms default */
+#define THROTTLE_UP_NSEC_BIGC	500000 /* 500us default */
 
 struct static_key __read_mostly __sched_freq = STATIC_KEY_INIT_FALSE;
 static bool __read_mostly cpufreq_driver_slow;
@@ -31,6 +33,7 @@ static struct cpufreq_governor cpufreq_gov_sched;
 
 static DEFINE_PER_CPU(unsigned long, enabled);
 DEFINE_PER_CPU(struct sched_capacity_reqs, cpu_sched_capacity_reqs);
+static DEFINE_PER_CPU(struct gov_tunables, cached_tunables);
 
 struct gov_tunables {
 	struct gov_attr_set attr_set;
@@ -64,6 +67,8 @@ struct gov_data {
 	struct task_struct *task;
 	struct irq_work irq_work;
 	unsigned int requested_freq;
+	struct kthread_worker worker;
+	struct task_struct *thread;
 };
 
 static void cpufreq_sched_try_driver_target(struct cpufreq_policy *policy,
@@ -334,11 +339,93 @@ static struct kobj_type tunables_ktype = {
 	.sysfs_ops = &governor_sysfs_ops,
 };
 
+static void gov_kthread_stop(struct gov_data *policy)
+{
+	flush_kthread_worker(&policy->worker);
+	kthread_stop(policy->thread);
+}
+
+static struct gov_tunables *gov_tunables_alloc(struct gov_data *policy)
+{
+	struct gov_tunables *tunables;
+
+	tunables = kzalloc(sizeof(*tunables), GFP_KERNEL);
+	if (tunables) {
+		gov_attr_set_init(&tunables->attr_set, &policy->tunables_hook);
+		if (!have_governor_per_policy())
+			global_tunables = tunables;
+	}
+	return tunables;
+}
+
+static void gov_tunables_free(struct gov_tunables *tunables)
+{
+	if (!have_governor_per_policy())
+		global_tunables = NULL;
+
+	kfree(tunables);
+}
+
+static void store_tunables_data(struct gov_tunables *tunables,
+		struct cpufreq_policy *policy)
+{
+	struct gov_tunables *ptunables;
+	unsigned int cpu = cpumask_first(policy->related_cpus);
+
+	ptunables = &per_cpu(cached_tunables, cpu);
+	if (!ptunables)
+		return;
+	ptunables->up_throttle_nsec = tunables->up_throttle_nsec;
+	ptunables->down_throttle_nsec = tunables->down_throttle_nsec;
+
+	pr_debug("tunables data saved for cpu[%u]\n", cpu);
+}
+
+static void get_tunables_data(struct gov_tunables *tunables,
+		struct cpufreq_policy *policy)
+{
+	struct gov_tunables *ptunables;
+	unsigned int cpu = cpumask_first(policy->related_cpus);
+
+	ptunables = &per_cpu(cached_tunables, cpu);
+	if (!ptunables)
+		goto initialize;
+
+	if (ptunables->up_throttle_nsec > 0) {
+		tunables->up_throttle_nsec = ptunables->up_throttle_nsec;
+		tunables->down_throttle_nsec = ptunables->down_throttle_nsec;
+		pr_debug("tunables data restored for cpu[%u]\n", cpu);
+		goto out;
+	}
+
+initialize:
+	if (cpu < 2) {
+		tunables->up_throttle_nsec =
+			policy->cpuinfo.transition_latency ?
+			policy->cpuinfo.transition_latency :
+			THROTTLE_UP_NSEC;
+		tunables->down_throttle_nsec =
+			THROTTLE_DOWN_NSEC;
+	} else {
+		tunables->up_throttle_nsec =
+			policy->cpuinfo.transition_latency ?
+			policy->cpuinfo.transition_latency :
+			THROTTLE_UP_NSEC_BIGC;
+		tunables->down_throttle_nsec =
+			THROTTLE_DOWN_NSEC_BIGC;
+	}
+	pr_debug("tunables data initialized for cpu[%u]\n", cpu);
+
+out:
+	return;
+}
+
 static int cpufreq_sched_policy_init(struct cpufreq_policy *policy)
 {
 	struct gov_data *gd;
+	struct gov_tunables *tunables;
 	int cpu;
-	int rc;
+	int ret = 0;
 
 	for_each_cpu(cpu, policy->cpus)
 		memset(&per_cpu(cpu_sched_capacity_reqs, cpu), 0,
@@ -348,40 +435,36 @@ static int cpufreq_sched_policy_init(struct cpufreq_policy *policy)
 	if (!gd)
 		return -ENOMEM;
 
+	if (global_tunables) {
+		if (WARN_ON(have_governor_per_policy())) {
+			ret = -EINVAL;
+			goto stop_kthread;
+		}
+		policy->governor_data = gd;
+		gd->tunables = global_tunables;
+
+		gov_attr_set_get(&global_tunables->attr_set,
+				 &gd->tunables_hook);
+		goto out;
+	}
+
+	tunables = gov_tunables_alloc(gd);
+	if (!tunables) {
+		ret = -ENOMEM;
+		goto stop_kthread;
+	}
+
+	get_tunables_data(tunables, policy);
+
 	policy->governor_data = gd;
+	gd->tunables = tunables;
 
-	if (!global_tunables) {
-		gd->tunables = kzalloc(sizeof(*gd->tunables), GFP_KERNEL);
-		if (!gd->tunables)
-			goto free_gd;
-
-		gd->tunables->up_throttle_nsec =
-			policy->cpuinfo.transition_latency ?
-			policy->cpuinfo.transition_latency :
-			THROTTLE_UP_NSEC;
-		gd->tunables->down_throttle_nsec =
-			THROTTLE_DOWN_NSEC;
-
-		rc = kobject_init_and_add(&gd->tunables->attr_set.kobj,
+	ret = kobject_init_and_add(&gd->tunables->attr_set.kobj,
 					  &tunables_ktype,
 					  get_governor_parent_kobj(policy),
 					  "%s", cpufreq_gov_sched.name);
-		if (rc)
-			goto free_tunables;
-
-		gov_attr_set_init(&gd->tunables->attr_set,
-				  &gd->tunables_hook);
-
-		pr_debug("%s: throttle_threshold = %u [ns]\n",
-			 __func__, gd->tunables->up_throttle_nsec);
-
-		if (!have_governor_per_policy())
-			global_tunables = gd->tunables;
-	} else {
-		gd->tunables = global_tunables;
-		gov_attr_set_get(&global_tunables->attr_set,
-				 &gd->tunables_hook);
-	}
+	if (ret)
+		goto fail;
 
 	if (cpufreq_driver_is_slow()) {
 		cpufreq_driver_slow = true;
@@ -391,7 +474,7 @@ static int cpufreq_sched_policy_init(struct cpufreq_policy *policy)
 		if (IS_ERR_OR_NULL(gd->task)) {
 			pr_err("%s: failed to create kschedfreq thread\n",
 			       __func__);
-			goto free_tunables;
+			goto free_gd;
 		}
 		get_task_struct(gd->task);
 		kthread_bind_mask(gd->task, policy->related_cpus);
@@ -403,12 +486,21 @@ static int cpufreq_sched_policy_init(struct cpufreq_policy *policy)
 
 	return 0;
 
-free_tunables:
-	kfree(gd->tunables);
-free_gd:
+out:
+	set_sched_freq();
+	return 0;
+
+stop_kthread:
+	gov_kthread_stop(gd);
+
+fail:
 	policy->governor_data = NULL;
-	kfree(gd);
-	return -ENOMEM;
+	gov_tunables_free(tunables);
+	
+free_gd:
+	gov_tunables_free(gd->tunables);
+	pr_err("initialization failed (error %d)\n", ret);
+	return ret;
 }
 
 static int cpufreq_sched_policy_exit(struct cpufreq_policy *policy)
@@ -422,11 +514,13 @@ static int cpufreq_sched_policy_exit(struct cpufreq_policy *policy)
 		put_task_struct(gd->task);
 	}
 
+	store_tunables_data(gd->tunables, policy);
+
 	count = gov_attr_set_put(&gd->tunables->attr_set, &gd->tunables_hook);
 	if (!count) {
 		if (!have_governor_per_policy())
 			global_tunables = NULL;
-		kfree(gd->tunables);
+		gov_tunables_free(gd->tunables);
 	}
 
 	policy->governor_data = NULL;
