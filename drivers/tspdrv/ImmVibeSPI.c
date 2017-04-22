@@ -676,7 +676,7 @@ static ssize_t drv2604_vib_max_show(struct device *dev,
 	return scnprintf(buf, PAGE_SIZE, "%d\n", MAX_VIBE_STRENGTH);
 }
 
-static ssize_t drv2604_vib_default_show(struct device *dev,
+static ssize_t drv2604_vib_level_default_show(struct device *dev,
 		struct device_attribute *attr,
 		char *buf)
 {
@@ -721,13 +721,13 @@ static ssize_t drv2604_vib_level_store(struct device *dev,
 
 static DEVICE_ATTR(vtg_min, S_IRUGO, drv2604_vib_min_show, NULL);
 static DEVICE_ATTR(vtg_max, S_IRUGO, drv2604_vib_max_show, NULL);
-static DEVICE_ATTR(vtg_default, S_IRUGO, drv2604_vib_default_show, NULL);
+static DEVICE_ATTR(vtg_level_default, S_IRUGO, drv2604_vib_level_default_show, NULL);
 static DEVICE_ATTR(vtg_level, S_IRUGO | S_IWUSR, drv2604_vib_level_show, drv2604_vib_level_store);
 
 static struct attribute *timed_dev_attrs[] = {
 	&dev_attr_vtg_min.attr,
 	&dev_attr_vtg_max.attr,
-	&dev_attr_vtg_default.attr,
+	&dev_attr_vtg_level_default.attr,
 	&dev_attr_vtg_level.attr,
 	NULL,
 };
@@ -746,7 +746,7 @@ static void drv2604_write_reg_val(const unsigned char *data, unsigned int size)
 	if (g_hw_version == 5) {
 		while (i < size) {
 			/* From Xiaomi start */
-			pr_debug("drv2604 x5 write 0x%02x, 0x%02x", data[i], data[i + 1]);
+// 			pr_debug("drv2604 x5 write 0x%02x, 0x%02x", data[i], data[i + 1]);
 			/* From Xiaomi end */
 			if (data[i] == 0x02)
 				i2c_smbus_write_byte_data(g_pTheClient, data[i], 0xFF);
@@ -757,7 +757,7 @@ static void drv2604_write_reg_val(const unsigned char *data, unsigned int size)
 	} else {
 		while (i < size) {
 			/* From Xiaomi start */
-			pr_debug("drv2604 write 0x%02x, 0x%02x", data[i], data[i + 1]);
+// 			pr_debug("drv2604 write 0x%02x, 0x%02x", data[i], data[i + 1]);
 			/* From Xiaomi end */
 			i2c_smbus_write_byte_data(g_pTheClient, data[i], data[i + 1]);
 			i += 2;
@@ -797,8 +797,8 @@ static unsigned char drv2604_read_reg(unsigned char reg)
 	msgs[1].len = 1;
 
 	res = i2c_transfer(i2c_adap, msgs, 2);
-	pr_debug("drv2604 read addr:0x%x reg:0x%x data:0x%x res:%d",
-		address, reg, data, res);
+// 	pr_debug("drv2604 read addr:0x%x reg:0x%x data:0x%x res:%d",
+// 		address, reg, data, res);
 
 	return data;
 /* From Xiaomi end */
@@ -929,7 +929,7 @@ static void vibrator_off(void)
 	char mode;
 	int iTimeout = 10;
 	mode = drv2604_read_reg(MODE_REG) & DRV2604_MODE_MASK;
-	pr_debug("vibrator_off: vibrator_is_playing: %d ,g_bAmpEnabled: %d\n", vibrator_is_playing, g_bAmpEnabled);
+// 	pr_debug("vibrator_off: vibrator_is_playing: %d ,g_bAmpEnabled: %d\n", vibrator_is_playing, g_bAmpEnabled);
 	if (vibrator_is_playing || (MODE_REAL_TIME_PLAYBACK == mode)) {
 		if (!vibrator_is_playing)
 			pr_err("drv2604 vibrator running exception\n");
@@ -966,7 +966,7 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 #endif
 	mutex_lock(&vibdata.lock);
 
-	pr_debug("vibrator_enable value = %d...................\n", value);
+// 	pr_debug("vibrator_enable value = %d...................\n", value);
 	if (value) {
 		wake_lock(&vibdata.wklock);
 		drv2604_read_reg(STATUS_REG);
@@ -1025,7 +1025,7 @@ static enum hrtimer_restart vibrator_timer_func(struct hrtimer *timer)
 static void vibrator_work(struct work_struct *work)
 {
 	mutex_lock(&vibdata.lock);
-	pr_debug("hrtimer timeout vibrator off start ...................\n");
+// 	pr_debug("hrtimer timeout vibrator off start ...................\n");
 	vibrator_off();
 	mutex_unlock(&vibdata.lock);
 }
