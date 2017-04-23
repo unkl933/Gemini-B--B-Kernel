@@ -151,8 +151,8 @@ BUILD_NOW()
 		cp .config B--B/view_only_config
 
 		# strip not needed debugs from modules.
-		android-toolchain-arm64/bin/aarch64-linux-android-strip --strip-unneeded "$KERNELDIR"/B--B/system/lib/modules/* 2>/dev/null
-		android-toolchain-arm64/bin/aarch64-linux-android-strip --strip-debug "$KERNELDIR"/B--B/system/lib/modules/* 2>/dev/null
+		android-toolchain-arm64/bin/arm-eabi-strip --strip-unneeded "$KERNELDIR"/B--B/system/lib/modules/* 2>/dev/null
+		android-toolchain-arm64/bin/arm-eabi-strip --strip-debug "$KERNELDIR"/B--B/system/lib/modules/* 2>/dev/null
 
 		# create the Ramdisk and move it to the output working directory
 		echo "Create Ramdisk..............."
@@ -164,7 +164,7 @@ BUILD_NOW()
 			ln -s /usr/bin/python3 /usr/bin/python
 		fi;
 
-		# add kernel config to kernle zip for other devs
+		# add kernel config to kernel zip for other devs
 		cp "$KERNELDIR"/.config B--B/
 
 		# build the final boot.img ready for inclusion in flashable zip
