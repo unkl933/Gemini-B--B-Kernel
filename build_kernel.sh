@@ -29,6 +29,12 @@ LANG=C
 # location
 KERNELDIR=$(readlink -f .);
 
+# Some variables
+VER=B--B-Kernel
+export LOCALVERSION=~`echo $VER`
+export KBUILD_BUILD_USER=B--B
+export KBUILD_BUILD_HOST=JDCTeam
+
 CLEANUP()
 {
 	# begin by ensuring the required directory structure is complete, and empty
