@@ -20,7 +20,7 @@ LANG=C
 #------Ramdisk-Gemini/			(ramdisk files for boot.img)
 #------Ramdisk-Gemini-tmp/		(ramdisk tmp store without .git)
 #--------lib/modules/			(modules dir, will be added to system on boot)
-#------B--B-Kernel/			(kernel source goes here)
+#------Gemini-B--B-Kernel/		(kernel source goes here)
 #--------READY-RELEASES/		(When using all selector, all models ready kernels will go to this folder)
 #--------B--B/				(output directory, where the final boot.img is placed)
 #----------meta-inf/			(meta-inf folder for your flashable zip)
