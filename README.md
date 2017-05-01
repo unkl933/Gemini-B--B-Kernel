@@ -10,7 +10,7 @@ Compiling instructions (python2 is needed):
 2) Create a new folder in the_name_you_want named Ramdisk-Gemini and put the ROM ramdisk into it
 
 3) Clone the kernel repo and cd into it
-    git clone https://github.com/B--B/B--B-Kernel.git && cd B--B-Kernel
+    git clone https://github.com/B--B/Gemini-B--B-Kernel.git && cd Gemini-B--B-Kernel
 
 4) Build the kernel (the flashable zip can be found in B--B directory)
     ./build_kernel.sh
@@ -26,5 +26,6 @@ Other scripts:
 
 BIG THANKS TO:
 
-Alucard24 & Dorimanx for build and cleaning scripts
-RenderBroken for EAS bringup
+- Alucard24 & Dorimanx for build and cleaning scripts
+- RenderBroken for EAS bringup
+- LineageOS guys for the kernel bringup
