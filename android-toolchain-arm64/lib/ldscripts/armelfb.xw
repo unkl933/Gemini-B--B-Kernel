@@ -7,7 +7,7 @@ OUTPUT_FORMAT("elf32-bigarm", "elf32-bigarm",
 	      "elf32-littlearm")
 OUTPUT_ARCH(arm)
 ENTRY(_start)
-SEARCH_DIR("=/home/b--b/SOURCES/Linaro/builds/aarch64-Mi5-linux-gnu/aarch64-Mi5-linux-gnu/lib");
+SEARCH_DIR("=/home/b--b/SOURCES/Gemini/builds/aarch64-Mi5-linux-gnu/aarch64-Mi5-linux-gnu/lib");
 SECTIONS
 {
   /* Read-only sections, merged into text segment: */
