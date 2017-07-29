@@ -877,6 +877,5 @@ static inline u32 irq_reg_readl(struct irq_chip_generic *gc,
 	else
 		return readl(gc->reg_base + reg_offset);
 }
-}
 
 #endif /* _LINUX_IRQ_H */
