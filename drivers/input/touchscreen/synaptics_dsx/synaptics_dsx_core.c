@@ -2010,8 +2010,8 @@ static int synaptics_rmi4_irq_enable(struct synaptics_rmi4_data *rmi4_data,
 }
 
 static int synaptics_rmi4_set_intr_mask(struct synaptics_rmi4_fn *fhandler,
-					struct synaptics_rmi4_fn_desc *fd,
-					unsigned int intr_count)
+		struct synaptics_rmi4_fn_desc *fd,
+		unsigned int intr_count)
 {
 	unsigned char ii;
 	unsigned char intr_offset;
@@ -3293,7 +3293,7 @@ flash_prog_mode:
 	dev_dbg(rmi4_data->pdev->dev.parent,
 			"%s: Number of interrupt registers = %d\n",
 			__func__, rmi4_data->num_of_intr_regs);
-	if (rmi4_data->num_of_intr_regs > MAX_INTR_REGISTERS)
+	if (rmi4_data->num_of_intr_regs >= MAX_INTR_REGISTERS)
 		return -EINVAL;
 
 	retval = synaptics_rmi4_reg_read(rmi4_data,
