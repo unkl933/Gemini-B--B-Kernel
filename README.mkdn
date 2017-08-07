@@ -38,8 +38,13 @@ FEATURES:
 
     * Compiled with latest Linaro GCC (7.1.1) optimized for Gemini devices
     * I/O scheduler: Deadline with screen ON, Noop with screen OFF
-    * Code updated to Linux v3.18.51 stable release
+    * Code updated to Linux v3.18.56 stable release
     * Fixed tons of warns/bugs spotted by latest GCC versions
     * Synced binder code with Marlin O kernel
-    * Various enhancements/optimisations
+    * Various enhancements/optimizations
+    * Removed UC for Mi5 lite variants
+    * Enabled Advanced TCP Options and set westwood as default
+    * Added various I/O scheduler (Zen, Maple, Fifo)
+    * Disabled some unuseful debugging
+    * Wakelocks: various optimizations
     * A lot of things i don't remember :)
