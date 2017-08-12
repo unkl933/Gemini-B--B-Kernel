@@ -1802,6 +1802,7 @@ free_irq:
 	return retval;
 }
 
+
 /*
  * Flush any TX data submitted for DMA. Called when the TX circular
  * buffer is reset.
@@ -1814,6 +1815,11 @@ static void atmel_flush_buffer(struct uart_port *port)
 		UART_PUT_TCR(port, 0);
 		atmel_port->pdc_tx.ofs = 0;
 	}
+	/*
+	 * in uart_flush_buffer(), the xmit circular buffer has just
+	 * been cleared, so we have to reset tx_len accordingly.
+	 */
+	sg_dma_len(&atmel_port->sg_tx) = 0;
 }
 
 /*
