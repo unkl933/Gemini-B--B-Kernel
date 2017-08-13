@@ -21,12 +21,8 @@
 	model = "Qualcomm Technologies, Inc. MSM 8996pro";
 	qcom,msm-id = <305 0x10000>;
 
-	chosen {
-		bootargs = "sched_enable_hmp=1 sched_enable_power_aware=1 app_setting.use_32bit_app_setting_pro=1";
-	};
-
-    cpus {
-        energy-costs {
+	cpus {
+		energy-costs {
 			CPU_COST_0: core-cost0 {
 				busy-cost-data = <
 					149 90
@@ -49,7 +45,7 @@
 					763 925
 				>;
 				idle-cost-data = <
-			  		2 2 0
+					2 2 0
 				>;
 			};
 			CPU_COST_1: core-cost1 {
@@ -143,8 +139,8 @@
 					0
 				>;
 			};
-        };
-    };
+		};
+	};
 };
 
 &apc_apm {
