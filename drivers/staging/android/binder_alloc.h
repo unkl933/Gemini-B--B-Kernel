@@ -97,6 +97,7 @@ struct binder_lru_page {
  * buffers. It is normally initialized during binder_init() and binder_mmap()
  * calls. The address space is used for both user-visible buffers and for
  * struct binder_buffer objects used to track the user buffers
+ * @pages_high:         high watermark of offset in @pages
  */
 struct binder_alloc {
 	struct mutex mutex;
@@ -113,6 +114,7 @@ struct binder_alloc {
 	size_t buffer_size;
 	uint32_t buffer_free;
 	int pid;
+	size_t pages_high;
 };
 
 #ifdef CONFIG_ANDROID_BINDER_IPC_SELFTEST
