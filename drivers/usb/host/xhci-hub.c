@@ -311,6 +311,7 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
 		spin_unlock_irqrestore(&xhci->lock, flags);
 		goto err_cmd_queue;
 	}
+
 	xhci_ring_cmd_db(xhci);
 	spin_unlock_irqrestore(&xhci->lock, flags);
 
