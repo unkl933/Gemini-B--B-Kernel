@@ -216,6 +216,14 @@ static struct kmem_cache *binder_thread_pool;
 static struct kmem_cache *binder_transaction_pool;
 static struct kmem_cache *binder_work_pool;
 
+static struct kmem_cache *binder_node_pool;
+static struct kmem_cache *binder_proc_pool;
+static struct kmem_cache *binder_ref_death_pool;
+static struct kmem_cache *binder_ref_pool;
+static struct kmem_cache *binder_thread_pool;
+static struct kmem_cache *binder_transaction_pool;
+static struct kmem_cache *binder_work_pool;
+
 static struct binder_transaction_log_entry *binder_transaction_log_add(
 	struct binder_transaction_log *log)
 {
@@ -4512,6 +4520,7 @@ retry:
 			else
 				cmd = BR_TRANSACTION_COMPLETE;
 			binder_inner_proc_unlock(proc);
+			cmd = BR_TRANSACTION_COMPLETE;
 			kmem_cache_free(binder_work_pool, w);
 			binder_stats_deleted(BINDER_STAT_TRANSACTION_COMPLETE);
 			if (put_user(cmd, (uint32_t __user *)ptr))
@@ -6623,6 +6632,10 @@ static int __init binder_init(void)
 	struct binder_device *device;
 	struct hlist_node *tmp;
 	char *device_names = NULL;
+
+	ret = binder_create_pools();
+	if (ret)
+		return ret;
 
 	ret = binder_create_pools();
 	if (ret)
