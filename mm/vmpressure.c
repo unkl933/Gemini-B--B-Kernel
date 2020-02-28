@@ -261,7 +261,7 @@ static unsigned long calculate_vmpressure_win(void)
 	return int_sqrt(x);
 }
 
-static void vmpressure_memcg(gfp_t gfp, struct mem_cgroup *memcg,
+static void vmpressure_memcg(gfp_t gfp, struct mem_cgroup *memcg, bool critical,
 			     unsigned long scanned, unsigned long reclaimed)
 {
 	struct vmpressure *vmpr = memcg_to_vmpressure(memcg);
@@ -292,41 +292,18 @@ static void vmpressure_memcg(gfp_t gfp, struct mem_cgroup *memcg,
 	schedule_work(&vmpr->work);
 }
 
-static void calculate_vmpressure_win(void)
-{
-	long x;
-
-	x = global_page_state(NR_FILE_PAGES) -
-			global_page_state(NR_SHMEM) -
-			total_swapcache_pages() +
-			global_page_state(NR_FREE_PAGES);
-	if (x < 1)
-		x = 1;
-	/*
-	 * For low (free + cached), vmpressure window should be
-	 * small, and high for higher values of (free + cached).
-	 * But it should not be linear as well. This ensures
-	 * timely vmpressure notifications when system is under
-	 * memory pressure, and optimal number of events when
-	 * cached is high. The sqaure root function is empirically
-	 * found to serve the purpose.
-	 */
-	x = int_sqrt(x);
-	vmpressure_win = x;
-}
-
-static void vmpressure_global(gfp_t gfp, unsigned long scanned,
+static void vmpressure_global(gfp_t gfp, unsigned long scanned, bool critical,
 			      unsigned long reclaimed)
 {
 	struct vmpressure *vmpr = &global_vmpressure;
 	unsigned long pressure;
 	unsigned long stall;
 
+	if (critical)
+		scanned = calculate_vmpressure_win();
+
 	if (scanned) {
 		spin_lock(&vmpr->sr_lock);
-		if (!vmpr->scanned)
-			calculate_vmpressure_win();
-
 		vmpr->scanned += scanned;
 		vmpr->reclaimed += reclaimed;
 
@@ -338,7 +315,7 @@ static void vmpressure_global(gfp_t gfp, unsigned long scanned,
 		reclaimed = vmpr->reclaimed;
 		spin_unlock(&vmpr->sr_lock);
 
-		if (scanned < vmpressure_win)
+		if (!critical && scanned < calculate_vmpressure_win())
 			return;
 	}
 
@@ -383,9 +360,6 @@ static void __vmpressure(gfp_t gfp, struct mem_cgroup *memcg, bool critical,
 void vmpressure(gfp_t gfp, struct mem_cgroup *memcg,
 		unsigned long scanned, unsigned long reclaimed, int order)
 {
-	if (order > PAGE_ALLOC_COSTLY_ORDER)
-		return;
-
 	__vmpressure(gfp, memcg, false, scanned, reclaimed);
 }
 
