@@ -2121,10 +2121,6 @@ static void binder_free_transaction(struct binder_transaction *t)
 		 */
 		spin_unlock(&t->lock);
 	}
-	/*
-	 * If the transaction has no target_proc, then
-	 * t->buffer->transaction has already been cleared.
-	 */
 	binder_free_txn_fixups(t);
 	kmem_cache_free(binder_transaction_pool, t);
 	binder_stats_deleted(BINDER_STAT_TRANSACTION);
