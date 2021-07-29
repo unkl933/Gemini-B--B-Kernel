@@ -280,7 +280,7 @@ static inline void memzero_explicit(void *s, size_t count)
 static const struct in6_addr __compat_in6addr_any = IN6ADDR_ANY_INIT;
 #define in6addr_any __compat_in6addr_any
 #endif
-
+#if 0 //RNG functions already in tree
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 13, 0) && LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
 #include <linux/completion.h>
 #include <linux/random.h>
@@ -376,7 +376,7 @@ static inline bool rng_is_initialized(void)
 	return true;
 }
 #endif
-
+#endif //RNG functions already in tree
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 13, 0)
 static inline int get_random_bytes_wait(void *buf, int nbytes)
 {
