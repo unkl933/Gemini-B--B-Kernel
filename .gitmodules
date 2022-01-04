@@ -1,0 +1,8 @@
+[submodule "aarch64-linux-android-4.9"]
+	path = aarch64-linux-android-4.9
+	url = https://github.com/PixelExperience/prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9
+	branch = eleven
+[submodule "arm-linux-androideabi-4.9"]
+	path = arm-linux-androideabi-4.9
+	url = https://github.com/PixelExperience/prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9
+	branch = eleven
