@@ -29,6 +29,8 @@
 #define VFIO_TYPE1_NESTING_IOMMU 6
 #define VFIO_SPAPR_TCE_v2_IOMMU 7
 #define VFIO_NOIOMMU_IOMMU 8
+#define VFIO_UNMAP_ALL 9
+#define VFIO_UPDATE_VADDR 10
 #define VFIO_TYPE (';')
 #define VFIO_BASE 100
 struct vfio_info_cap_header {
@@ -58,8 +60,11 @@ struct vfio_device_info {
 #define VFIO_DEVICE_FLAGS_AMBA (1 << 3)
 #define VFIO_DEVICE_FLAGS_CCW (1 << 4)
 #define VFIO_DEVICE_FLAGS_AP (1 << 5)
+#define VFIO_DEVICE_FLAGS_FSL_MC (1 << 6)
+#define VFIO_DEVICE_FLAGS_CAPS (1 << 7)
   __u32 num_regions;
   __u32 num_irqs;
+  __u32 cap_offset;
 };
 #define VFIO_DEVICE_GET_INFO _IO(VFIO_TYPE, VFIO_BASE + 7)
 #define VFIO_DEVICE_API_PCI_STRING "vfio-pci"
@@ -67,6 +72,10 @@ struct vfio_device_info {
 #define VFIO_DEVICE_API_AMBA_STRING "vfio-amba"
 #define VFIO_DEVICE_API_CCW_STRING "vfio-ccw"
 #define VFIO_DEVICE_API_AP_STRING "vfio-ap"
+#define VFIO_DEVICE_INFO_CAP_ZPCI_BASE 1
+#define VFIO_DEVICE_INFO_CAP_ZPCI_GROUP 2
+#define VFIO_DEVICE_INFO_CAP_ZPCI_UTIL 3
+#define VFIO_DEVICE_INFO_CAP_ZPCI_PFIP 4
 struct vfio_region_info {
   __u32 argsz;
   __u32 flags;
@@ -205,6 +214,7 @@ enum {
 enum {
   VFIO_CCW_IO_IRQ_INDEX,
   VFIO_CCW_CRW_IRQ_INDEX,
+  VFIO_CCW_REQ_IRQ_INDEX,
   VFIO_CCW_NUM_IRQS
 };
 struct vfio_pci_dependent_device {
@@ -301,12 +311,18 @@ struct vfio_iommu_type1_info_cap_migration {
   __u64 pgsize_bitmap;
   __u64 max_dirty_bitmap_size;
 };
+#define VFIO_IOMMU_TYPE1_INFO_DMA_AVAIL 3
+struct vfio_iommu_type1_info_dma_avail {
+  struct vfio_info_cap_header header;
+  __u32 avail;
+};
 #define VFIO_IOMMU_GET_INFO _IO(VFIO_TYPE, VFIO_BASE + 12)
 struct vfio_iommu_type1_dma_map {
   __u32 argsz;
   __u32 flags;
 #define VFIO_DMA_MAP_FLAG_READ (1 << 0)
 #define VFIO_DMA_MAP_FLAG_WRITE (1 << 1)
+#define VFIO_DMA_MAP_FLAG_VADDR (1 << 2)
   __u64 vaddr;
   __u64 iova;
   __u64 size;
@@ -321,6 +337,8 @@ struct vfio_iommu_type1_dma_unmap {
   __u32 argsz;
   __u32 flags;
 #define VFIO_DMA_UNMAP_FLAG_GET_DIRTY_BITMAP (1 << 0)
+#define VFIO_DMA_UNMAP_FLAG_ALL (1 << 1)
+#define VFIO_DMA_UNMAP_FLAG_VADDR (1 << 2)
   __u64 iova;
   __u64 size;
   __u8 data[];

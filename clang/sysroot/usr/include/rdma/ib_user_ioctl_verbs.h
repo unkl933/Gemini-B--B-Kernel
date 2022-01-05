@@ -153,6 +153,7 @@ enum ib_uverbs_read_counters_flags {
 enum ib_uverbs_advise_mr_advice {
   IB_UVERBS_ADVISE_MR_ADVICE_PREFETCH,
   IB_UVERBS_ADVISE_MR_ADVICE_PREFETCH_WRITE,
+  IB_UVERBS_ADVISE_MR_ADVICE_PREFETCH_NO_FAULT,
 };
 enum ib_uverbs_advise_mr_flag {
   IB_UVERBS_ADVISE_MR_FLAG_FLUSH = 1 << 0,
@@ -180,6 +181,7 @@ enum rdma_driver_id {
   RDMA_DRIVER_OCRDMA,
   RDMA_DRIVER_NES,
   RDMA_DRIVER_I40IW,
+  RDMA_DRIVER_IRDMA = RDMA_DRIVER_I40IW,
   RDMA_DRIVER_VMW_PVRDMA,
   RDMA_DRIVER_QEDR,
   RDMA_DRIVER_HNS,
@@ -189,5 +191,17 @@ enum rdma_driver_id {
   RDMA_DRIVER_QIB,
   RDMA_DRIVER_EFA,
   RDMA_DRIVER_SIW,
+};
+enum ib_uverbs_gid_type {
+  IB_UVERBS_GID_TYPE_IB,
+  IB_UVERBS_GID_TYPE_ROCE_V1,
+  IB_UVERBS_GID_TYPE_ROCE_V2,
+};
+struct ib_uverbs_gid_entry {
+  __aligned_u64 gid[2];
+  __u32 gid_index;
+  __u32 port_num;
+  __u32 gid_type;
+  __u32 netdev_ifindex;
 };
 #endif

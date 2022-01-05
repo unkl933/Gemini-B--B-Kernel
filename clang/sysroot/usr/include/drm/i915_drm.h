@@ -67,6 +67,7 @@ enum drm_i915_pmu_engine_sample {
 #define I915_PMU_REQUESTED_FREQUENCY __I915_PMU_OTHER(1)
 #define I915_PMU_INTERRUPTS __I915_PMU_OTHER(2)
 #define I915_PMU_RC6_RESIDENCY __I915_PMU_OTHER(3)
+#define I915_PMU_SOFTWARE_GT_AWAKE_TIME __I915_PMU_OTHER(4)
 #define I915_PMU_LAST I915_PMU_RC6_RESIDENCY
 #define I915_NR_TEX_REGIONS 255
 #define I915_LOG_MIN_TEX_REGION_SIZE 14
@@ -216,6 +217,7 @@ typedef struct _drm_i915_sarea {
 #define DRM_I915_QUERY 0x39
 #define DRM_I915_GEM_VM_CREATE 0x3a
 #define DRM_I915_GEM_VM_DESTROY 0x3b
+#define DRM_I915_GEM_CREATE_EXT 0x3c
 #define DRM_IOCTL_I915_INIT DRM_IOW(DRM_COMMAND_BASE + DRM_I915_INIT, drm_i915_init_t)
 #define DRM_IOCTL_I915_FLUSH DRM_IO(DRM_COMMAND_BASE + DRM_I915_FLUSH)
 #define DRM_IOCTL_I915_FLIP DRM_IO(DRM_COMMAND_BASE + DRM_I915_FLIP)
@@ -246,6 +248,7 @@ typedef struct _drm_i915_sarea {
 #define DRM_IOCTL_I915_GEM_ENTERVT DRM_IO(DRM_COMMAND_BASE + DRM_I915_GEM_ENTERVT)
 #define DRM_IOCTL_I915_GEM_LEAVEVT DRM_IO(DRM_COMMAND_BASE + DRM_I915_GEM_LEAVEVT)
 #define DRM_IOCTL_I915_GEM_CREATE DRM_IOWR(DRM_COMMAND_BASE + DRM_I915_GEM_CREATE, struct drm_i915_gem_create)
+#define DRM_IOCTL_I915_GEM_CREATE_EXT DRM_IOWR(DRM_COMMAND_BASE + DRM_I915_GEM_CREATE_EXT, struct drm_i915_gem_create_ext)
 #define DRM_IOCTL_I915_GEM_PREAD DRM_IOW(DRM_COMMAND_BASE + DRM_I915_GEM_PREAD, struct drm_i915_gem_pread)
 #define DRM_IOCTL_I915_GEM_PWRITE DRM_IOW(DRM_COMMAND_BASE + DRM_I915_GEM_PWRITE, struct drm_i915_gem_pwrite)
 #define DRM_IOCTL_I915_GEM_MMAP DRM_IOWR(DRM_COMMAND_BASE + DRM_I915_GEM_MMAP, struct drm_i915_gem_mmap)
@@ -361,6 +364,7 @@ typedef struct drm_i915_irq_wait {
 #define I915_PARAM_MMAP_GTT_COHERENT 52
 #define I915_PARAM_HAS_EXEC_SUBMIT_FENCE 53
 #define I915_PARAM_PERF_REVISION 54
+#define I915_PARAM_HAS_EXEC_TIMELINE_FENCES 55
 typedef struct drm_i915_getparam {
   __s32 param;
   int __user * value;
@@ -523,6 +527,13 @@ struct drm_i915_gem_exec_fence {
 #define __I915_EXEC_FENCE_UNKNOWN_FLAGS (- (I915_EXEC_FENCE_SIGNAL << 1))
   __u32 flags;
 };
+#define DRM_I915_GEM_EXECBUFFER_EXT_TIMELINE_FENCES 0
+struct drm_i915_gem_execbuffer_ext_timeline_fences {
+  struct i915_user_extension base;
+  __u64 fence_count;
+  __u64 handles_ptr;
+  __u64 values_ptr;
+};
 struct drm_i915_gem_execbuffer2 {
   __u64 buffers_ptr;
   __u32 buffer_count;
@@ -562,7 +573,8 @@ struct drm_i915_gem_execbuffer2 {
 #define I915_EXEC_BATCH_FIRST (1 << 18)
 #define I915_EXEC_FENCE_ARRAY (1 << 19)
 #define I915_EXEC_FENCE_SUBMIT (1 << 20)
-#define __I915_EXEC_UNKNOWN_FLAGS (- (I915_EXEC_FENCE_SUBMIT << 1))
+#define I915_EXEC_USE_EXTENSIONS (1 << 21)
+#define __I915_EXEC_UNKNOWN_FLAGS (- (I915_EXEC_USE_EXTENSIONS << 1))
 #define I915_EXEC_CONTEXT_ID_MASK (0xffffffff)
 #define i915_execbuffer2_set_context_id(eb2,context) (eb2).rsvd1 = context & I915_EXEC_CONTEXT_ID_MASK
 #define i915_execbuffer2_get_context_id(eb2) ((eb2).rsvd1 & I915_EXEC_CONTEXT_ID_MASK)
@@ -876,6 +888,7 @@ struct drm_i915_query_item {
 #define DRM_I915_QUERY_TOPOLOGY_INFO 1
 #define DRM_I915_QUERY_ENGINE_INFO 2
 #define DRM_I915_QUERY_PERF_CONFIG 3
+#define DRM_I915_QUERY_MEMORY_REGIONS 4
   __s32 length;
   __u32 flags;
 #define DRM_I915_QUERY_PERF_CONFIG_LIST 1
@@ -921,6 +934,39 @@ struct drm_i915_query_perf_config {
   };
   __u32 flags;
   __u8 data[];
+};
+enum drm_i915_gem_memory_class {
+  I915_MEMORY_CLASS_SYSTEM = 0,
+  I915_MEMORY_CLASS_DEVICE,
+};
+struct drm_i915_gem_memory_class_instance {
+  __u16 memory_class;
+  __u16 memory_instance;
+};
+struct drm_i915_memory_region_info {
+  struct drm_i915_gem_memory_class_instance region;
+  __u32 rsvd0;
+  __u64 probed_size;
+  __u64 unallocated_size;
+  __u64 rsvd1[8];
+};
+struct drm_i915_query_memory_regions {
+  __u32 num_regions;
+  __u32 rsvd[3];
+  struct drm_i915_memory_region_info regions[];
+};
+struct drm_i915_gem_create_ext {
+  __u64 size;
+  __u32 handle;
+  __u32 flags;
+#define I915_GEM_CREATE_EXT_MEMORY_REGIONS 0
+  __u64 extensions;
+};
+struct drm_i915_gem_create_ext_memory_regions {
+  struct i915_user_extension base;
+  __u32 pad;
+  __u32 num_regions;
+  __u64 regions;
 };
 #ifdef __cplusplus
 }

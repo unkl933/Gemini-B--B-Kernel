@@ -42,6 +42,7 @@ struct drm_msm_timespec {
 #define MSM_PARAM_NR_RINGS 0x07
 #define MSM_PARAM_PP_PGTABLE 0x08
 #define MSM_PARAM_FAULTS 0x09
+#define MSM_PARAM_SUSPENDS 0x0a
 struct drm_msm_param {
   __u32 pipe;
   __u32 param;
@@ -53,7 +54,8 @@ struct drm_msm_param {
 #define MSM_BO_CACHED 0x00010000
 #define MSM_BO_WC 0x00020000
 #define MSM_BO_UNCACHED 0x00040000
-#define MSM_BO_FLAGS (MSM_BO_SCANOUT | MSM_BO_GPU_READONLY | MSM_BO_CACHED | MSM_BO_WC | MSM_BO_UNCACHED)
+#define MSM_BO_CACHED_COHERENT 0x080000
+#define MSM_BO_FLAGS (MSM_BO_SCANOUT | MSM_BO_GPU_READONLY | MSM_BO_CACHE_MASK)
 struct drm_msm_gem_new {
   __u64 size;
   __u32 flags;

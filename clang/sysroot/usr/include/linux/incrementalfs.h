@@ -23,17 +23,20 @@
 #include <linux/types.h>
 #include <linux/xattr.h>
 #define INCFS_NAME "incremental-fs"
-#define INCFS_MAGIC_NUMBER (unsigned long) (0x5346434e49ul)
+#define INCFS_MAGIC_NUMBER (0x5346434e49ul & ULONG_MAX)
 #define INCFS_DATA_FILE_BLOCK_SIZE 4096
 #define INCFS_HEADER_VER 1
 #define INCFS_MAX_HASH_SIZE 32
 #define INCFS_MAX_FILE_ATTR_SIZE 512
+#define INCFS_INDEX_NAME ".index"
+#define INCFS_INCOMPLETE_NAME ".incomplete"
 #define INCFS_PENDING_READS_FILENAME ".pending_reads"
 #define INCFS_LOG_FILENAME ".log"
 #define INCFS_BLOCKS_WRITTEN_FILENAME ".blocks_written"
 #define INCFS_XATTR_ID_NAME (XATTR_USER_PREFIX "incfs.id")
 #define INCFS_XATTR_SIZE_NAME (XATTR_USER_PREFIX "incfs.size")
 #define INCFS_XATTR_METADATA_NAME (XATTR_USER_PREFIX "incfs.metadata")
+#define INCFS_XATTR_VERITY_NAME (XATTR_USER_PREFIX "incfs.verity")
 #define INCFS_MAX_SIGNATURE_SIZE 8096
 #define INCFS_SIGNATURE_VERSION 2
 #define INCFS_SIGNATURE_SECTIONS 2
@@ -47,11 +50,14 @@
 #define INCFS_IOC_GET_BLOCK_COUNT _IOR(INCFS_IOCTL_BASE_CODE, 36, struct incfs_get_block_count_args)
 #define INCFS_IOC_GET_READ_TIMEOUTS _IOR(INCFS_IOCTL_BASE_CODE, 37, struct incfs_get_read_timeouts_args)
 #define INCFS_IOC_SET_READ_TIMEOUTS _IOW(INCFS_IOCTL_BASE_CODE, 38, struct incfs_set_read_timeouts_args)
+#define INCFS_IOC_GET_LAST_READ_ERROR _IOW(INCFS_IOCTL_BASE_CODE, 39, struct incfs_get_last_read_error_args)
 #define INCFS_FEATURE_FLAG_COREFS "corefs"
-#define INCFS_FEATURE_FLAG_REPORT_UID "report_uid"
+#define INCFS_FEATURE_FLAG_ZSTD "zstd"
+#define INCFS_FEATURE_FLAG_V2 "v2"
 enum incfs_compression_alg {
   COMPRESSION_NONE = 0,
-  COMPRESSION_LZ4 = 1
+  COMPRESSION_LZ4 = 1,
+  COMPRESSION_ZSTD = 2,
 };
 enum incfs_block_flags {
   INCFS_BLOCK_FLAGS_NONE = 0,
@@ -147,9 +153,9 @@ struct incfs_get_block_count_args {
 };
 struct incfs_per_uid_read_timeouts {
   __u32 uid;
-  __u32 min_time_ms;
-  __u32 min_pending_time_ms;
-  __u32 max_pending_time_ms;
+  __u32 min_time_us;
+  __u32 min_pending_time_us;
+  __u32 max_pending_time_us;
 };
 struct incfs_get_read_timeouts_args {
   __aligned_u64 timeouts_array;
@@ -159,5 +165,14 @@ struct incfs_get_read_timeouts_args {
 struct incfs_set_read_timeouts_args {
   __aligned_u64 timeouts_array;
   __u32 timeouts_array_size;
+};
+struct incfs_get_last_read_error_args {
+  incfs_uuid_t file_id_out;
+  __u64 time_us_out;
+  __u32 page_out;
+  __u32 errno_out;
+  __u32 uid_out;
+  __u32 reserved1;
+  __u64 reserved2;
 };
 #endif

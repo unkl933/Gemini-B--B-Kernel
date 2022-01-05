@@ -62,7 +62,8 @@ struct seccomp_metadata {
 #define PTRACE_SYSCALL_INFO_SECCOMP 3
 struct ptrace_syscall_info {
   __u8 op;
-  __u32 arch __attribute__((__aligned__(sizeof(__u32))));
+  __u8 pad[3];
+  __u32 arch;
   __u64 instruction_pointer;
   __u64 stack_pointer;
   union {
@@ -80,6 +81,14 @@ struct ptrace_syscall_info {
       __u32 ret_data;
     } seccomp;
   };
+};
+#define PTRACE_GET_RSEQ_CONFIGURATION 0x420f
+struct ptrace_rseq_configuration {
+  __u64 rseq_abi_pointer;
+  __u32 rseq_abi_size;
+  __u32 signature;
+  __u32 flags;
+  __u32 pad;
 };
 #define PTRACE_EVENTMSG_SYSCALL_ENTRY 1
 #define PTRACE_EVENTMSG_SYSCALL_EXIT 2

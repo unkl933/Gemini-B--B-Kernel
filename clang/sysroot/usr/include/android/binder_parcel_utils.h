@@ -27,6 +27,7 @@
 #pragma once
 
 #include <android/binder_auto_utils.h>
+#include <android/binder_internal_logging.h>
 #include <android/binder_parcel.h>
 
 #include <optional>
@@ -179,6 +180,7 @@ static inline binder_status_t AParcel_readNullableStrongBinder(const AParcel* pa
 static inline binder_status_t AParcel_writeRequiredStrongBinder(AParcel* parcel,
                                                                 const SpAIBinder& binder) {
     if (binder.get() == nullptr) {
+        syslog(LOG_ERR, "Passing null binder object as non-@nullable AIDL IBinder");
         return STATUS_UNEXPECTED_NULL;
     }
     return AParcel_writeStrongBinder(parcel, binder.get());
@@ -228,6 +230,7 @@ static inline binder_status_t AParcel_readNullableParcelFileDescriptor(const APa
 static inline binder_status_t AParcel_writeRequiredParcelFileDescriptor(
         AParcel* parcel, const ScopedFileDescriptor& fd) {
     if (fd.get() < 0) {
+        syslog(LOG_ERR, "Passing -1 file descriptor as non-@nullable AIDL ParcelFileDescriptor");
         return STATUS_UNEXPECTED_NULL;
     }
     return AParcel_writeParcelFileDescriptor(parcel, fd.get());
@@ -466,6 +469,22 @@ static inline binder_status_t AParcel_writeNullableParcelable(AParcel* parcel,
 }
 
 /**
+ * Convenience API for writing a nullable parcelable.
+ */
+template <typename P>
+static inline binder_status_t AParcel_writeNullableParcelable(AParcel* parcel,
+                                                              const std::unique_ptr<P>& p) {
+    if (!p) {
+        return AParcel_writeInt32(parcel, 0);  // null
+    }
+    binder_status_t status = AParcel_writeInt32(parcel, 1);  // non-null
+    if (status != STATUS_OK) {
+        return status;
+    }
+    return p->writeToParcel(parcel);
+}
+
+/**
  * Convenience API for reading a nullable parcelable.
  */
 template <typename P>
@@ -481,6 +500,25 @@ static inline binder_status_t AParcel_readNullableParcelable(const AParcel* parc
         return STATUS_OK;
     }
     *p = std::optional<P>(P{});
+    return (*p)->readFromParcel(parcel);
+}
+
+/**
+ * Convenience API for reading a nullable parcelable.
+ */
+template <typename P>
+static inline binder_status_t AParcel_readNullableParcelable(const AParcel* parcel,
+                                                             std::unique_ptr<P>* p) {
+    int32_t null;
+    binder_status_t status = AParcel_readInt32(parcel, &null);
+    if (status != STATUS_OK) {
+        return status;
+    }
+    if (null == 0) {
+        p->reset();
+        return STATUS_OK;
+    }
+    *p = std::make_unique<P>();
     return (*p)->readFromParcel(parcel);
 }
 
@@ -907,6 +945,9 @@ static inline binder_status_t AParcel_resizeVector(const AParcel* parcel, std::v
     if (err != STATUS_OK) return err;
     if (size < 0) return STATUS_UNEXPECTED_NULL;
 
+    // TODO(b/188215728): delegate to libbinder_ndk
+    if (size > 1000000) return STATUS_NO_MEMORY;
+
     vec->resize(static_cast<size_t>(size));
     return STATUS_OK;
 }
@@ -927,6 +968,9 @@ static inline binder_status_t AParcel_resizeVector(const AParcel* parcel,
         *vec = std::nullopt;
         return STATUS_OK;
     }
+
+    // TODO(b/188215728): delegate to libbinder_ndk
+    if (size > 1000000) return STATUS_NO_MEMORY;
 
     *vec = std::optional<std::vector<T>>(std::vector<T>{});
     (*vec)->resize(static_cast<size_t>(size));

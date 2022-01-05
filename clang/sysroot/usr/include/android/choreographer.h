@@ -32,6 +32,11 @@
 __BEGIN_DECLS
 
 struct AChoreographer;
+/**
+ * Opaque type that provides access to an AChoreographer object.
+ *
+ * A pointer can be obtained using {@link AChoreographer_getInstance()}.
+ */
 typedef struct AChoreographer AChoreographer;
 
 /**
@@ -61,8 +66,6 @@ typedef void (*AChoreographer_frameCallback64)(int64_t frameTimeNanos, void* dat
  */
 typedef void (*AChoreographer_refreshRateCallback)(int64_t vsyncPeriodNanos, void* data);
 
-#if __ANDROID_API__ >= 24
-
 /**
  * Get the AChoreographer instance for the current thread. This must be called
  * on an ALooper thread.
@@ -86,10 +89,6 @@ void AChoreographer_postFrameCallbackDelayed(AChoreographer* choreographer,
                                              long delayMillis) __INTRODUCED_IN(24)
         __DEPRECATED_IN(29);
 
-#endif /* __ANDROID_API__ >= 24 */
-
-#if __ANDROID_API__ >= 29
-
 /**
  * Power a callback to be run on the next frame.  The data pointer provided will
  * be passed to the callback function when it's called.
@@ -110,10 +109,6 @@ void AChoreographer_postFrameCallback64(AChoreographer* choreographer,
 void AChoreographer_postFrameCallbackDelayed64(AChoreographer* choreographer,
                                                AChoreographer_frameCallback64 callback, void* data,
                                                uint32_t delayMillis) __INTRODUCED_IN(29);
-
-#endif /* __ANDROID_API__ >= 29 */
-
-#if __ANDROID_API__ >= 30
 
 /**
  * Registers a callback to be run when the display refresh rate changes. The
@@ -136,6 +131,10 @@ void AChoreographer_postFrameCallbackDelayed64(AChoreographer* choreographer,
  * Display properties would be required by this callback, then it is recommended
  * to listen directly to DisplayManager.DisplayListener#onDisplayChanged events
  * instead.
+ *
+ * As of API level 31, this api is guaranteed to have a consistent view with DisplayManager;
+ * Display#getRefreshRate is guaranteed to not return a stale refresh rate when invoked from this
+ * callback.
  *
  * Available since API level 30.
  */
@@ -160,7 +159,6 @@ void AChoreographer_registerRefreshRateCallback(AChoreographer* choreographer,
 void AChoreographer_unregisterRefreshRateCallback(AChoreographer* choreographer,
                                                   AChoreographer_refreshRateCallback, void* data)
         __INTRODUCED_IN(30);
-#endif /* __ANDROID_API__ >= 30 */
 
 __END_DECLS
 
