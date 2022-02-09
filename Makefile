@@ -1,6 +1,6 @@
 VERSION = 4
 PATCHLEVEL = 4
-SUBLEVEL = 273
+SUBLEVEL = 274
 EXTRAVERSION =
 NAME = Blurry Fish Butt
 
@@ -775,12 +775,11 @@ KBUILD_CFLAGS += $(call cc-option, -mllvm -polly) \
 		 $(call cc-option, -mllvm -polly-run-dce) \
 		 $(call cc-option, -mllvm -polly-run-inliner) \
 		 $(call cc-option, -mllvm -polly-vectorizer=stripmine)
-else
+endif
 
 # These warnings generated too much noise in a regular build.
 # Use make W=1 to enable them (see scripts/Makefile.extrawarn)
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
-endif
 
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-const-variable)
 ifdef CONFIG_FRAME_POINTER
